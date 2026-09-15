@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <color name="bg_dark">#0F1016</color>
+    <color name="surface_dark">#181A24</color>
+    <color name="surface_card">#222634</color>
+    <color name="border_dark">#2E3346</color>
+    <color name="accent_primary">#6366F1</color>
+    <color name="accent_gradient_start">#4F46E5</color>
+    <color name="accent_gradient_end">#06B6D4</color>
+    <color name="text_primary">#FFFFFF</color>
+    <color name="text_secondary">#9CA3AF</color>
+    <color name="text_muted">#6B7280</color>
+    <color name="ssl_green">#10B981</color>
+    <color name="dns_chip_bg">#312E81</color>
+</resources>

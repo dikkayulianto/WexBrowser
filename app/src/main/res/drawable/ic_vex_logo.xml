@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="64dp"
+    android:height="64dp"
+    android:viewportWidth="64"
+    android:viewportHeight="64">
+    <!-- Gradient Orbit Logo -->
+    <path
+        android:fillColor="#4F46E5"
+        android:pathData="M32,8 A24,24 0 1,0 56,32 A24,24 0 0,0 32,8 Z M32,16 A16,16 0 1,1 16,32 A16,16 0 0,1 32,16 Z" />
+    <path
+        android:fillColor="#06B6D4"
+        android:pathData="M14,24 C20,12 44,12 50,24 C56,36 32,48 20,44 Z" />
+</vector>

@@ -1,0 +1,34 @@
+<?xml version="1.0" encoding="utf-8"?>
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="wrap_content"
+    android:orientation="vertical"
+    android:padding="20dp">
+
+    <TextView
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:text="Masukkan Pengaturan DNS Kustom:"
+        android:textColor="#333333"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <EditText
+        android:id="@+id/etCustomDoh"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:hint="URL DoH (misal: https://1.1.1.1/dns-query)"
+        android:inputType="textUri"
+        android:textSize="13sp" />
+
+    <EditText
+        android:id="@+id/etCustomIp"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="8dp"
+        android:hint="IP Server DNS Fallback (misal: 1.1.1.1)"
+        android:inputType="text"
+        android:textSize="13sp" />
+
+</LinearLayout>
