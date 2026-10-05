@@ -142,12 +142,14 @@ public class MainActivity extends AppCompatActivity {
             Log.e(TAG, "applyDnsSettings error", t);
         }
 
-        // Tampilkan halaman Beranda langsung agar pembukaan app instan
-        showStartPage();
-
-        // Buat tab pertama
-        if (tabManager != null) {
-            tabManager.createTab("", false, true);
+        // Inisialisasi halaman awal (Membuka Komivex secara default atau Start Page)
+        if (com.example.notebrowser.komivex.KomivexConfig.DEFAULT_LOAD_KOMIVEX_ON_START) {
+            openUrl(com.example.notebrowser.komivex.KomivexConfig.KOMIVEX_URL);
+        } else {
+            showStartPage();
+            if (tabManager != null) {
+                tabManager.createTab("", false, true);
+            }
         }
     }
 
@@ -1090,6 +1092,15 @@ public class MainActivity extends AppCompatActivity {
     }
 
     private void setupQuickAccess() {
+        View cardKomivex = findViewById(R.id.cardKomivexFeatured);
+        if (cardKomivex != null) {
+            cardKomivex.setOnClickListener(v -> openUrl(com.example.notebrowser.komivex.KomivexConfig.KOMIVEX_URL));
+        }
+        View qaKomivex = findViewById(R.id.qaKomivex);
+        if (qaKomivex != null) {
+            qaKomivex.setOnClickListener(v -> openUrl(com.example.notebrowser.komivex.KomivexConfig.KOMIVEX_URL));
+        }
+
         findViewById(R.id.qaGoogle).setOnClickListener(v -> openUrl("https://www.google.com"));
         findViewById(R.id.qaYoutube).setOnClickListener(v -> openUrl("https://www.youtube.com"));
         findViewById(R.id.qaWikipedia).setOnClickListener(v -> openUrl("https://www.wikipedia.org"));
@@ -1145,9 +1156,26 @@ public class MainActivity extends AppCompatActivity {
         btnNavHome.setOnClickListener(v -> {
             BrowserTab active = tabManager.getActiveTab();
             if (active != null) {
-                active.setHome(true);
+                String currentUrl = active.getUrl();
+                if (com.example.notebrowser.komivex.KomivexConfig.DEFAULT_LOAD_KOMIVEX_ON_START &&
+                        (currentUrl == null || !currentUrl.contains("komivex.my.id"))) {
+                    openUrl(com.example.notebrowser.komivex.KomivexConfig.KOMIVEX_URL);
+                } else {
+                    active.setHome(true);
+                    showStartPage();
+                }
+            } else {
                 showStartPage();
             }
+        });
+
+        btnNavHome.setOnLongClickListener(v -> {
+            BrowserTab active = tabManager.getActiveTab();
+            if (active != null) {
+                active.setHome(true);
+            }
+            showStartPage();
+            return true;
         });
 
         btnNavTabs.setOnClickListener(v -> showTabsDialog());
@@ -1518,6 +1546,14 @@ public class MainActivity extends AppCompatActivity {
             dialog.dismiss();
             tabManager.createTab("", false, true);
         });
+
+        View menuKomivex = view.findViewById(R.id.menuKomivex);
+        if (menuKomivex != null) {
+            menuKomivex.setOnClickListener(v -> {
+                dialog.dismiss();
+                openUrl(com.example.notebrowser.komivex.KomivexConfig.KOMIVEX_URL);
+            });
+        }
 
         view.findViewById(R.id.menuNewIncognitoTab).setOnClickListener(v -> {
             dialog.dismiss();

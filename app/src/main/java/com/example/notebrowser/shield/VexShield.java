@@ -343,7 +343,8 @@ public class VexShield {
                h.contains("linktree.com") ||
                h.contains("heylink.me") ||
                h.contains("bio.link") ||
-               h.contains("beacons.ai");
+               h.contains("beacons.ai") ||
+               h.contains("komivex.my.id");
     }
 
     public synchronized void recordBlock() {
