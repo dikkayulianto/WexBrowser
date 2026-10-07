@@ -6,7 +6,7 @@ import java.util.UUID;
 public class BrowserTab {
     private final String id;
     private String title;
-    private String url;
+    private volatile String url;
     private final boolean isIncognito;
     private boolean isHome;
     private WebView webView;

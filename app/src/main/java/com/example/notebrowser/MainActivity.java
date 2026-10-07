@@ -385,76 +385,82 @@ public class MainActivity extends AppCompatActivity {
 
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
-                if (request != null && request.getUrl() != null) {
-                    String reqUrl = request.getUrl().toString();
-                    String currentUrl = (view != null && view.getUrl() != null) ? view.getUrl() : tab.getUrl();
-                    Map<String, String> headers = request.getRequestHeaders();
-                    String referer = (headers != null) ? headers.get("Referer") : null;
-                    if (referer == null && headers != null) referer = headers.get("referer");
+                try {
+                    if (request != null && request.getUrl() != null) {
+                        String reqUrl = request.getUrl().toString();
+                        String currentUrl = (tab != null) ? tab.getUrl() : null;
+                        Map<String, String> headers = request.getRequestHeaders();
+                        String referer = (headers != null) ? headers.get("Referer") : null;
+                        if (referer == null && headers != null) referer = headers.get("referer");
 
-                    boolean isKomivex = (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
-                                        (referer != null && referer.toLowerCase(Locale.ROOT).contains("komivex")) ||
-                                        (tab != null && tab.getUrl() != null && tab.getUrl().toLowerCase(Locale.ROOT).contains("komivex")) ||
-                                        reqUrl.toLowerCase(Locale.ROOT).contains("komivex");
+                        boolean isKomivex = (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
+                                            (referer != null && referer.toLowerCase(Locale.ROOT).contains("komivex")) ||
+                                            reqUrl.toLowerCase(Locale.ROOT).contains("komivex");
 
-                    if (!isKomivex && vexShield != null && vexShield.shouldBlock(reqUrl, currentUrl)) {
-                        tab.incrementBlockedCount();
-                        vexShield.recordBlock();
-                        runOnUiThread(() -> {
-                            if (tabManager.getActiveTab() == tab) {
-                                updateShieldBadgeUI(tab.getBlockedCount());
-                                updateShieldDashboardUI();
-                            }
-                        });
-                        return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
+                        if (!isKomivex && vexShield != null && vexShield.shouldBlock(reqUrl, currentUrl)) {
+                            tab.incrementBlockedCount();
+                            vexShield.recordBlock();
+                            runOnUiThread(() -> {
+                                if (tabManager.getActiveTab() == tab) {
+                                    updateShieldBadgeUI(tab.getBlockedCount());
+                                    updateShieldDashboardUI();
+                                }
+                            });
+                            return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
+                        }
+
+                        // Kompatibilitas script Komivex di WebView versi lama (Android 5.0 - 7.1.2)
+                        WebResourceResponse komivexResp = handleKomivexScriptIntercept(reqUrl);
+                        if (komivexResp != null) {
+                            return komivexResp;
+                        }
+
+                        // Sterilkan halaman pemutar video streaming dari overlay iklan dan script popup liar
+                        WebResourceResponse playerResp = handlePlayerIntercept(reqUrl, currentUrl, request.getRequestHeaders(), request.getMethod());
+                        if (playerResp != null) {
+                            return playerResp;
+                        }
                     }
-
-                    // Kompatibilitas script Komivex di WebView versi lama (Android 5.0 - 7.1.2)
-                    WebResourceResponse komivexResp = handleKomivexScriptIntercept(reqUrl);
-                    if (komivexResp != null) {
-                        return komivexResp;
-                    }
-
-                    // Sterilkan halaman pemutar video streaming dari overlay iklan dan script popup liar
-                    WebResourceResponse playerResp = handlePlayerIntercept(reqUrl, tab.getUrl(), request.getRequestHeaders(), request.getMethod());
-                    if (playerResp != null) {
-                        return playerResp;
-                    }
+                } catch (Throwable t) {
+                    Log.e(TAG, "Error in shouldInterceptRequest", t);
                 }
                 return super.shouldInterceptRequest(view, request);
             }
 
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
-                if (url != null) {
-                    String currentUrl = (view != null && view.getUrl() != null) ? view.getUrl() : tab.getUrl();
-                    boolean isKomivex = (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
-                                        (tab != null && tab.getUrl() != null && tab.getUrl().toLowerCase(Locale.ROOT).contains("komivex")) ||
-                                        url.toLowerCase(Locale.ROOT).contains("komivex");
+                try {
+                    if (url != null) {
+                        String currentUrl = (tab != null) ? tab.getUrl() : null;
+                        boolean isKomivex = (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
+                                            url.toLowerCase(Locale.ROOT).contains("komivex");
 
-                    if (!isKomivex && vexShield != null && vexShield.shouldBlock(url, currentUrl)) {
-                        tab.incrementBlockedCount();
-                        vexShield.recordBlock();
-                        runOnUiThread(() -> {
-                            if (tabManager.getActiveTab() == tab) {
-                                updateShieldBadgeUI(tab.getBlockedCount());
-                                updateShieldDashboardUI();
-                            }
-                        });
-                        return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
-                    }
+                        if (!isKomivex && vexShield != null && vexShield.shouldBlock(url, currentUrl)) {
+                            tab.incrementBlockedCount();
+                            vexShield.recordBlock();
+                            runOnUiThread(() -> {
+                                if (tabManager.getActiveTab() == tab) {
+                                    updateShieldBadgeUI(tab.getBlockedCount());
+                                    updateShieldDashboardUI();
+                                }
+                            });
+                            return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
+                        }
 
-                    // Kompatibilitas script Komivex di WebView versi lama (Android 5.0 - 7.1.2)
-                    WebResourceResponse komivexResp = handleKomivexScriptIntercept(url);
-                    if (komivexResp != null) {
-                        return komivexResp;
-                    }
+                        // Kompatibilitas script Komivex di WebView versi lama (Android 5.0 - 7.1.2)
+                        WebResourceResponse komivexResp = handleKomivexScriptIntercept(url);
+                        if (komivexResp != null) {
+                            return komivexResp;
+                        }
 
-                    // Sterilkan halaman pemutar video streaming dari overlay iklan dan script popup liar
-                    WebResourceResponse playerResp = handlePlayerIntercept(url, tab.getUrl(), null, "GET");
-                    if (playerResp != null) {
-                        return playerResp;
+                        // Sterilkan halaman pemutar video streaming dari overlay iklan dan script popup liar
+                        WebResourceResponse playerResp = handlePlayerIntercept(url, currentUrl, null, "GET");
+                        if (playerResp != null) {
+                            return playerResp;
+                        }
                     }
+                } catch (Throwable t) {
+                    Log.e(TAG, "Error in shouldInterceptRequest(String)", t);
                 }
                 return super.shouldInterceptRequest(view, url);
             }
@@ -655,7 +661,7 @@ public class MainActivity extends AppCompatActivity {
             return handleExternalScheme(cleanUrl);
         }
 
-        String currentUrl = (tab != null && tab.getUrl() != null) ? tab.getUrl() : ((view != null) ? view.getUrl() : null);
+        String currentUrl = (tab != null) ? tab.getUrl() : null;
         String currentHost = VexShield.extractHost(currentUrl);
 
         boolean isKomivex = (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
