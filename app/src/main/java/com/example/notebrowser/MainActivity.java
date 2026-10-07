@@ -305,9 +305,13 @@ public class MainActivity extends AppCompatActivity {
         settings.setAllowFileAccess(true);
         settings.setAllowContentAccess(true);
         settings.setSupportMultipleWindows(true);
-        settings.setJavaScriptCanOpenWindowsAutomatically(false);
+        settings.setJavaScriptCanOpenWindowsAutomatically(true);
         settings.setMediaPlaybackRequiresUserGesture(false);
         settings.setRenderPriority(WebSettings.RenderPriority.HIGH);
+
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+            settings.setMixedContentMode(WebSettings.MIXED_CONTENT_ALWAYS_ALLOW);
+        }
 
         if (isDesktopMode) {
             settings.setUserAgentString("Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36");
@@ -325,7 +329,9 @@ public class MainActivity extends AppCompatActivity {
             settings.setCacheMode(WebSettings.LOAD_DEFAULT);
             try {
                 CookieManager.getInstance().setAcceptCookie(true);
-                CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true);
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.LOLLIPOP) {
+                    CookieManager.getInstance().setAcceptThirdPartyCookies(wv, true);
+                }
             } catch (Exception ignored) {}
         }
 
@@ -333,6 +339,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageStarted(WebView view, String url, Bitmap favicon) {
                 super.onPageStarted(view, url, favicon);
+                if (url != null) {
+                    tab.setUrl(url);
+                }
                 tab.resetBlockedCount();
                 injectCosmeticScriptIfNeeded(view, url);
 
@@ -350,6 +359,9 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public void onPageFinished(WebView view, String url) {
                 super.onPageFinished(view, url);
+                if (url != null) {
+                    tab.setUrl(url);
+                }
                 injectCosmeticScriptIfNeeded(view, url);
 
                 // Catat riwayat jika bukan mode samaran & bukan halaman beranda
@@ -375,7 +387,17 @@ public class MainActivity extends AppCompatActivity {
             public WebResourceResponse shouldInterceptRequest(WebView view, WebResourceRequest request) {
                 if (request != null && request.getUrl() != null) {
                     String reqUrl = request.getUrl().toString();
-                    if (vexShield != null && vexShield.shouldBlock(reqUrl, tab.getUrl())) {
+                    String currentUrl = (view != null && view.getUrl() != null) ? view.getUrl() : tab.getUrl();
+                    Map<String, String> headers = request.getRequestHeaders();
+                    String referer = (headers != null) ? headers.get("Referer") : null;
+                    if (referer == null && headers != null) referer = headers.get("referer");
+
+                    boolean isKomivex = (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
+                                        (referer != null && referer.toLowerCase(Locale.ROOT).contains("komivex")) ||
+                                        (tab != null && tab.getUrl() != null && tab.getUrl().toLowerCase(Locale.ROOT).contains("komivex")) ||
+                                        reqUrl.toLowerCase(Locale.ROOT).contains("komivex");
+
+                    if (!isKomivex && vexShield != null && vexShield.shouldBlock(reqUrl, currentUrl)) {
                         tab.incrementBlockedCount();
                         vexShield.recordBlock();
                         runOnUiThread(() -> {
@@ -405,7 +427,12 @@ public class MainActivity extends AppCompatActivity {
             @Override
             public WebResourceResponse shouldInterceptRequest(WebView view, String url) {
                 if (url != null) {
-                    if (vexShield != null && vexShield.shouldBlock(url, tab.getUrl())) {
+                    String currentUrl = (view != null && view.getUrl() != null) ? view.getUrl() : tab.getUrl();
+                    boolean isKomivex = (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
+                                        (tab != null && tab.getUrl() != null && tab.getUrl().toLowerCase(Locale.ROOT).contains("komivex")) ||
+                                        url.toLowerCase(Locale.ROOT).contains("komivex");
+
+                    if (!isKomivex && vexShield != null && vexShield.shouldBlock(url, currentUrl)) {
                         tab.incrementBlockedCount();
                         vexShield.recordBlock();
                         runOnUiThread(() -> {
@@ -628,8 +655,15 @@ public class MainActivity extends AppCompatActivity {
             return handleExternalScheme(cleanUrl);
         }
 
-        String currentUrl = (tab != null) ? tab.getUrl() : null;
+        String currentUrl = (tab != null && tab.getUrl() != null) ? tab.getUrl() : ((view != null) ? view.getUrl() : null);
         String currentHost = VexShield.extractHost(currentUrl);
+
+        boolean isKomivex = (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
+                            cleanUrl.toLowerCase(Locale.ROOT).contains("komivex");
+
+        if (isKomivex) {
+            return false;
+        }
 
         // 2. Jika pengguna sedang berada di situs shortlink/safelink (misal ketik.live),
         // jangan diblokir agar bisa meneruskan (redirect) ke alamat aslinya!

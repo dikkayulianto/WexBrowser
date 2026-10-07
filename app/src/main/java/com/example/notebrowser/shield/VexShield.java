@@ -137,7 +137,8 @@ public class VexShield {
         if (requestUrl == null || requestUrl.isEmpty()) return false;
 
         // Jangan blokir iklan atau script apapun jika pengguna sedang berada di web Komivex
-        if (pageUrl != null && pageUrl.toLowerCase(Locale.ROOT).contains("komivex")) {
+        if ((pageUrl != null && pageUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
+            requestUrl.toLowerCase(Locale.ROOT).contains("komivex")) {
             return false;
         }
 
@@ -225,7 +226,8 @@ public class VexShield {
 
     public boolean isPopupOrAdUrl(String url, String currentUrl) {
         if (url == null || url.trim().isEmpty()) return false;
-        if (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) {
+        if ((currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) ||
+            url.toLowerCase(Locale.ROOT).contains("komivex")) {
             return false;
         }
         String cleanUrl = url.trim();
@@ -243,6 +245,9 @@ public class VexShield {
 
         // 1. Skema liar pengalih / about:blank / data URI
         if (lower.equals("about:blank") || lower.startsWith("data:text/html")) {
+            if (currentUrl == null || currentUrl.isEmpty() || "about:blank".equalsIgnoreCase(currentUrl)) {
+                return false;
+            }
             return true;
         }
 
