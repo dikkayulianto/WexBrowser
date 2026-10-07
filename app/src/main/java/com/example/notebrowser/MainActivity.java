@@ -285,7 +285,7 @@ public class MainActivity extends AppCompatActivity {
         String targetUrl = (url != null && !url.isEmpty()) ? url : view.getUrl();
         if (targetUrl == null) return;
         String host = VexShield.extractHost(targetUrl);
-        if (host != null && VexShield.isSearchOrPortal(host)) {
+        if (host != null && (VexShield.isSearchOrPortal(host) || host.contains("komivex"))) {
             return;
         }
         view.loadUrl(VexShield.getCosmeticHidingScript());
@@ -387,6 +387,12 @@ public class MainActivity extends AppCompatActivity {
                         return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
                     }
 
+                    // Kompatibilitas script Komivex di WebView versi lama (Android 5.0 - 7.1.2)
+                    WebResourceResponse komivexResp = handleKomivexScriptIntercept(reqUrl);
+                    if (komivexResp != null) {
+                        return komivexResp;
+                    }
+
                     // Sterilkan halaman pemutar video streaming dari overlay iklan dan script popup liar
                     WebResourceResponse playerResp = handlePlayerIntercept(reqUrl, tab.getUrl(), request.getRequestHeaders(), request.getMethod());
                     if (playerResp != null) {
@@ -409,6 +415,12 @@ public class MainActivity extends AppCompatActivity {
                             }
                         });
                         return new WebResourceResponse("text/plain", "UTF-8", new ByteArrayInputStream(new byte[0]));
+                    }
+
+                    // Kompatibilitas script Komivex di WebView versi lama (Android 5.0 - 7.1.2)
+                    WebResourceResponse komivexResp = handleKomivexScriptIntercept(url);
+                    if (komivexResp != null) {
+                        return komivexResp;
                     }
 
                     // Sterilkan halaman pemutar video streaming dari overlay iklan dan script popup liar
@@ -823,6 +835,49 @@ public class MainActivity extends AppCompatActivity {
             return new WebResourceResponse("text/html", "UTF-8", new ByteArrayInputStream(sanitized.getBytes(StandardCharsets.UTF_8)));
         } catch (Exception e) {
             Log.e(TAG, "Gagal meng-intercept player: " + url, e);
+            return null;
+        }
+    }
+
+    private WebResourceResponse handleKomivexScriptIntercept(String url) {
+        if (url == null || !url.contains("komivex.my.id") || !url.contains("app.js")) {
+            return null;
+        }
+        try {
+            URL u = new URL(url);
+            HttpURLConnection conn = (HttpURLConnection) u.openConnection();
+            if (conn instanceof HttpsURLConnection) {
+                HttpsURLConnection httpsConn = (HttpsURLConnection) conn;
+                try {
+                    httpsConn.setSSLSocketFactory(com.example.notebrowser.dns.DnsResolver.getLenientSslSocketFactory());
+                    httpsConn.setHostnameVerifier((hostname, session) -> true);
+                } catch (Exception ignored) {}
+            }
+            conn.setConnectTimeout(8000);
+            conn.setReadTimeout(10000);
+            conn.setRequestMethod("GET");
+            conn.setInstanceFollowRedirects(true);
+            conn.setRequestProperty("User-Agent", "Mozilla/5.0 (Linux; Android 7.1.2; SM-N900 Build/N2G47H) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119.0.0.0 Mobile Safari/537.36");
+
+            InputStream in = conn.getInputStream();
+            BufferedReader reader = new BufferedReader(new InputStreamReader(in, StandardCharsets.UTF_8));
+            StringBuilder sb = new StringBuilder();
+            String line;
+            while ((line = reader.readLine()) != null) {
+                sb.append(line).append("\n");
+            }
+            reader.close();
+            conn.disconnect();
+
+            String js = sb.toString();
+            // Patch optional chaining yang menyebabkan error sintaks di WebView Android lama
+            js = js.replace("mangaDetailsCache[mangaId]?.cover", "((mangaDetailsCache[mangaId] && mangaDetailsCache[mangaId].cover))");
+            js = js.replaceAll("([a-zA-Z0-9_\\]]+)\\?\\.([a-zA-Z0-9_]+)", "($1 ? $1.$2 : undefined)");
+
+            byte[] bytes = js.getBytes(StandardCharsets.UTF_8);
+            return new WebResourceResponse("application/javascript", "UTF-8", new ByteArrayInputStream(bytes));
+        } catch (Exception e) {
+            Log.e(TAG, "Gagal meng-intercept script Komivex: " + e.getMessage());
             return null;
         }
     }

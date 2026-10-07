@@ -136,6 +136,11 @@ public class VexShield {
     public boolean shouldBlock(String requestUrl, String pageUrl) {
         if (requestUrl == null || requestUrl.isEmpty()) return false;
 
+        // Jangan blokir iklan atau script apapun jika pengguna sedang berada di web Komivex
+        if (pageUrl != null && pageUrl.toLowerCase(Locale.ROOT).contains("komivex")) {
+            return false;
+        }
+
         String pageHost = extractHost(pageUrl);
         if (pageHost != null && isWhitelisted(pageHost)) {
             return false;
@@ -220,6 +225,9 @@ public class VexShield {
 
     public boolean isPopupOrAdUrl(String url, String currentUrl) {
         if (url == null || url.trim().isEmpty()) return false;
+        if (currentUrl != null && currentUrl.toLowerCase(Locale.ROOT).contains("komivex")) {
+            return false;
+        }
         String cleanUrl = url.trim();
         String lower = cleanUrl.toLowerCase(Locale.ROOT);
 
@@ -380,8 +388,12 @@ public class VexShield {
 
     public boolean isWhitelisted(String host) {
         if (host == null) return false;
+        String h = host.toLowerCase(Locale.ROOT);
+        if (h.contains("komivex")) {
+            return true;
+        }
         Set<String> whitelist = prefs.getStringSet(KEY_WHITELIST, new HashSet<>());
-        return whitelist.contains(host.toLowerCase(Locale.ROOT));
+        return whitelist.contains(h);
     }
 
     public void setShieldEnabled(String host, boolean enabled) {
