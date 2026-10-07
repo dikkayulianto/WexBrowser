@@ -846,7 +846,7 @@
                         android:layout_width="wrap_content"
                         android:layout_height="wrap_content"
                         app:adSize="BANNER"
-                        app:adUnitId="ca-app-pub-7051565094319223/4149284487" />
+                        app:adUnitId="ca-app-pub-7051565094319223/3520848077" />
                 </LinearLayout>
 
             </LinearLayout>

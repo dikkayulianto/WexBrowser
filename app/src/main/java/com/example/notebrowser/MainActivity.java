@@ -1230,6 +1230,21 @@ public class MainActivity extends AppCompatActivity {
 
             adViewHome = findViewById(R.id.adViewHome);
             if (adViewHome != null) {
+                adViewHome.setAdListener(new com.google.android.gms.ads.AdListener() {
+                    @Override
+                    public void onAdLoaded() {
+                        super.onAdLoaded();
+                        Log.d(TAG, "AdMob Banner loaded successfully!");
+                        View container = findViewById(R.id.layoutAdMobContainer);
+                        if (container != null) container.setVisibility(View.VISIBLE);
+                    }
+
+                    @Override
+                    public void onAdFailedToLoad(com.google.android.gms.ads.LoadAdError loadAdError) {
+                        super.onAdFailedToLoad(loadAdError);
+                        Log.w(TAG, "AdMob Banner failed to load: " + loadAdError.getMessage() + " (Code: " + loadAdError.getCode() + ")");
+                    }
+                });
                 com.google.android.gms.ads.AdRequest adRequest = new com.google.android.gms.ads.AdRequest.Builder().build();
                 adViewHome.loadAd(adRequest);
             }
